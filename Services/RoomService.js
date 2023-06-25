@@ -64,20 +64,28 @@ export const RoomService = {
     });
 
     const bookings = Bookings.findAll({
-      where: literal(`checkin BETWEEN DATE(:CHECKIN) AND DATE(:CHECKOUT) OR checkout BETWEEN DATE(:CHECKIN) AND DATE(:CHECKOUT)`),
+      where: literal(`checkin BETWEEN DATE(:CHECKIN) AND DATE(:CHECKOUT) OR checkout BETWEEN DATE(:CHECKIN) AND DATE(:CHECKOUT) AND isDeleted <> 1`),
       replacements: { CHECKIN: checkin, CHECKOUT: checkout }
     });
 
     return Promise.all([rooms, bookings]);
   },
   RoomBooking: async (data,userid) => {
-
+    
     const { checkin, checkout, roomid, price } = data;
 
+    const bookings = await Bookings.findAll({
+      where: literal(`checkin BETWEEN DATE(:CHECKIN) AND DATE(:CHECKOUT) OR checkout BETWEEN DATE(:CHECKIN) AND DATE(:CHECKOUT) AND isDeleted <> 1 AND roomid = :ROOMID`),
+      replacements: { CHECKIN: checkin, CHECKOUT: checkout, ROOMID:roomid } 
+    }) 
+
+    if(bookings.length) {
+      throw BookingError(error.ROOM_ALREADY_BOOKED)
+    }
+
     const days = differenceInDays(new Date(checkout), new Date(checkin));
-
-    const fullPrice = days * price;
-
+    const fullBookingPrice = days * price;
+    
 
 
   },
