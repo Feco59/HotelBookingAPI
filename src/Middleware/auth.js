@@ -1,8 +1,4 @@
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
-
-dotenv.config({path:'../.env'})
-
 
 const veryfiToken = (req,res,next) => {
   const token = req.headers["x-access-token"];
