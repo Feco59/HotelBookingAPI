@@ -10,7 +10,8 @@ export const error = {
   },
   USER_ERROR: {
     statusCode: 409,
-    message: 'Holiday is already running'
+    message: 'User',
+    createMessage: param => `${param}`
   },
   MISSING_INPUT: {
     statusCode: 400,

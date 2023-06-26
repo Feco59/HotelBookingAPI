@@ -1,7 +1,7 @@
-import { literal } from "sequelize";
+import { literal,Op } from "sequelize";
 import db from "../Model/index.js";
 import { differenceInDays } from "date-fns";
-import { BookingError, error } from "./statusService.js";
+
 
 const Hotel = db.hotel;
 const Bookings = db.bookings;
@@ -11,62 +11,55 @@ export const RoomService = {
   getAvailableRooms: async filters => {
 
     try {
+      const {checkin,checkout,price,available} = filters
+      const rooms = await RoomService.getAllRooms();
+
+
+      const RoomsData = rooms.map(room => {
+        const RoomData = {
+          RoomID: room.RoomID,
+          Price: room.Price,
+          hotelid: room.dataValues.hotelid,
+          HotelName: room.Hotel.name
+        };
+        return RoomData
+      })
 
       if(Object.keys(filters).length === 0) {
-        const rooms = await RoomService.getAllRooms();
-
-        const RoomsData = rooms.map(room => {
-          const RoomData = {
-            RoomID: room.RoomID,
-            Price: room.Price,
-            hotelid: room.dataValues.hotelid,
-            HotelName: room.Hotel.name
-          };
-          return RoomData
-        })
-
         return RoomsData
+      };
+
+      let filteredRooms;
+
+      if(checkin && checkout) {
+        const days = differenceInDays(new Date(checkout), new Date(checkin));
+        filteredRooms = RoomsData.map(room => ({...room,fullPrice: room.Price * days}))
       }
-      let availableRooms;
-      const data = await RoomService.getDataToAvailableRooms(filters);
-
-      const BookingsData = data[1].map(booking => booking.roomid);
-      const roomsData = data[0].map(room => {
-        const RoomData = {
-          RoomId: room.RoomID,
-          price: room.Price,
-          hotelId: room.dataValues.hotelid,
-          hotelName: room.Hotel.dataValues.name
-        }
-        return RoomData;
-      });
-
-      if (filters.hotel) {
-        availableRooms = roomsData.filter(e => e.hotelId === Number(filters.hotel))
-      }
-
-      if (filters.available) {
-        if (availableRooms) {
-          availableRooms = availableRooms.filter(e => !BookingsData.includes(e.RoomId))
+      
+      if (available) {
+        const BookingsData = await RoomService.getRoomsByAvailable(checkin,checkout);
+        const BookedRooms = new Set(BookingsData.map(e => e.roomid));
+        
+        if (filteredRooms) {
+          filteredRooms = filteredRooms.filter(e => !BookedRooms.has(e.RoomID))
         } else {
-          availableRooms = roomsData.filter(e => !BookingsData.includes(e.RoomId))
+          filteredRooms = RoomsData.filter(e => !BookedRooms.has(e.RoomID))
         }
       }
 
-      if (filters.price) {
-        if (availableRooms) {
-          availableRooms = availableRooms.filter(e => e.price <= Number(filters.price))
+      if (price) {
+        if (filteredRooms) {
+          filteredRooms = filteredRooms.filter(e => e.Price <= Number(price))
         } else {
-          availableRooms = roomsData.filter(e => e.price <= Number(filters.price))
+          filteredRooms = RoomsData.filter(e => e.Price <= Number(price))
         }
       }
-
-      return availableRooms;
+      
+      return filteredRooms;
     } catch (e) {
       console.log(e)
       return e
     }
-
   },
   getAllRooms: async _ => {
     const rooms = Room.findAll({
@@ -78,62 +71,23 @@ export const RoomService = {
     });
     return rooms  
   },
-  getDataToAvailableRooms: async filters => {
-    const { checkin, checkout } = filters
-
-    const rooms = Room.findAll({
-      attributes: ['RoomID', 'Price', 'hotelid'],
-      include: {
-        model: Hotel,
-        attributes: ['name']
-      }
-    });
-
-    const bookings = Bookings.findAll({
+  getRoomsByAvailable: async (checkin,checkout) => {
+    const bookings = await Bookings.findAll({
       where: literal(`checkin BETWEEN DATE(:CHECKIN) AND DATE(:CHECKOUT) OR checkout BETWEEN DATE(:CHECKIN) AND DATE(:CHECKOUT) AND isDeleted <> 1`),
       replacements: { CHECKIN: checkin, CHECKOUT: checkout }
     });
 
-    return Promise.all([rooms, bookings]);
+    return bookings
   },
-  RoomBooking: async (data,userid) => {
-    
-    const { checkin, checkout, roomid, price } = data;
+  getRoomsByPrice: async price => {
+    const RoomsByPrice = await Room.findAll({
+      where: {
+        price: {
+          [Op.gte]: price
+        }
+      }
+    })
 
-    const bookings = await Bookings.findAll({
-      where: literal(`checkin BETWEEN DATE(:CHECKIN) AND DATE(:CHECKOUT) OR checkout BETWEEN DATE(:CHECKIN) AND DATE(:CHECKOUT) AND isDeleted <> 1 AND roomid = :ROOMID`),
-      replacements: { CHECKIN: checkin, CHECKOUT: checkout, ROOMID:roomid } 
-    }) 
-
-    if(bookings.length) {
-      throw BookingError(error.ROOM_ALREADY_BOOKED)
-    }
-
-    const days = differenceInDays(new Date(checkout), new Date(checkin));
-    const fullBookingPrice = days * price;
-    
-
-
-  },
-  DeleteBooking: async (bookingid, userid) => {
-
-    const booking = await Bookings.findByPk(Number(bookingid));
-    
-    if (!booking) {
-      throw  BookingError(error.NOT_FOUND, 'Booking')
-    }
-
-    if (booking.guestid !== Number(userid)) {
-      throw  BookingError(error.FORBIDDEN_ACTION)
-    }
-
-    if (new Date(booking.checkin) <= new Date()) {
-      throw  BookingError(error.USER_ERROR)
-    }
-
-    booking.isDeleted = 1;
-    await booking.save();
-
-    return booking;
+    return RoomsByPrice;
   }
 }
