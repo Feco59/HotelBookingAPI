@@ -11,6 +11,22 @@ export const RoomService = {
   getAvailableRooms: async filters => {
 
     try {
+
+      if(Object.keys(filters).length === 0) {
+        const rooms = await RoomService.getAllRooms();
+
+        const RoomsData = rooms.map(room => {
+          const RoomData = {
+            RoomID: room.RoomID,
+            Price: room.Price,
+            hotelid: room.dataValues.hotelid,
+            HotelName: room.Hotel.name
+          };
+          return RoomData
+        })
+
+        return RoomsData
+      }
       let availableRooms;
       const data = await RoomService.getDataToAvailableRooms(filters);
 
@@ -51,6 +67,16 @@ export const RoomService = {
       return e
     }
 
+  },
+  getAllRooms: async _ => {
+    const rooms = Room.findAll({
+      attributes: ['RoomID', 'Price', 'hotelid'],
+      include: {
+        model: Hotel,
+        attributes: ['name']
+      }
+    });
+    return rooms  
   },
   getDataToAvailableRooms: async filters => {
     const { checkin, checkout } = filters
