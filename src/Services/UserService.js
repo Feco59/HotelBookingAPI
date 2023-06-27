@@ -6,16 +6,6 @@ import { error, BookingError } from "./statusService.js"
 const User = db.user
 
 const UserService = {
-  createUser: async userData => {
-    try {
-      await User.create({
-        username: userData.username,
-        password: bcrypt.hashSync(userData.password, 8),
-      })
-    } catch (e) {
-      console.log(e)
-    }
-  },
   Login: async userData => {
 
     const user = await User.findOne({
@@ -24,8 +14,15 @@ const UserService = {
       }
     })
 
+    if (!userData.username) {
+      throw BookingError(error.MISSING_INPUT, 'username')
+    }
+    if (!userData.password) {
+      throw BookingError(error.MISSING_INPUT, 'password')
+    }
+
     if (!user) {
-      throw (error.NOT_FOUND, 'User')
+      throw BookingError(error.NOT_FOUND, 'User')
     }
     const passwordValidation = bcrypt.compareSync(
       userData.password,

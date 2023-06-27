@@ -3,27 +3,31 @@ import { BookingService } from "../Services/BookingService.js";
 export const BookingController = {
   RoomBooking: async (req, res) => {
     try {
-
       const bookingData = req.body;
       const userId = req.userId;
       const bookingDetails = await BookingService.RoomBooking(bookingData, userId);
 
-      res.status(200).send(bookingDetails)
+      res.status(200).send(bookingDetails);
     } catch (e) {
-      console.log(e)
-      res.status(e.statusCode).send(e.message)
+      if(!e.errCode) {
+        res.send(500).send('Server Error');
+      }
+      res.status(e.statusCode).send(e.message);
     }
   },
   DeleteBooking: async (req, res) => {
-    try {
 
+    try {
       const bookingData = req.body.bookingid;
-      const userId = req.userId
+      const userId = req.userId;
       const deleteResult = await BookingService.DeleteBooking(bookingData, userId);
 
-      res.status(200).send(deleteResult)
+      res.status(200).send(deleteResult);
     } catch (e) {
-      res.status(e.statusCode).send(e.message)
+      if(!e.errCode) {
+        res.send(500).send('Server Error');
+      }
+      res.status(e.statusCode).send(e.message);
     }
   },
   History: async (req, res) => {
@@ -34,7 +38,10 @@ export const BookingController = {
 
       res.status(200).send(HistoryData);
     } catch (e) {
-      res.status(e.statusCode).send(e.message)
+      if(!e.errCode) {
+        res.send(500).send('Server Error');
+      }
+      res.status(e.statusCode).send(e.message);
     }
   }
 }

@@ -23,7 +23,7 @@ export default (sequelize, Sequelize) => {
     isDeleted: {
       type: Sequelize.INTEGER
     },
- 
+
   });
 
   return Bookings;

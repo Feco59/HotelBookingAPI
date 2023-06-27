@@ -1,5 +1,5 @@
-import { literal,Op } from "sequelize";
 import db from "../Model/index.js";
+import { literal, Op } from "sequelize";
 import { differenceInDays } from "date-fns";
 
 
@@ -11,7 +11,7 @@ export const RoomService = {
   getAvailableRooms: async filters => {
 
     try {
-      const {checkin,checkout,price,available} = filters
+      const { checkin, checkout, price, available } = filters
       const rooms = await RoomService.getAllRooms();
 
 
@@ -25,21 +25,21 @@ export const RoomService = {
         return RoomData
       })
 
-      if(Object.keys(filters).length === 0) {
+      if (Object.keys(filters).length === 0) {
         return RoomsData
       };
 
       let filteredRooms;
 
-      if(checkin && checkout) {
+      if (checkin && checkout) {
         const days = differenceInDays(new Date(checkout), new Date(checkin));
-        filteredRooms = RoomsData.map(room => ({...room,fullPrice: room.Price * days}))
+        filteredRooms = RoomsData.map(room => ({ ...room, fullPrice: room.Price * days }))
       }
-      
-      if (available) {
-        const BookingsData = await RoomService.getRoomsByAvailable(checkin,checkout);
+
+      if (available === Number(1)) {
+        const BookingsData = await RoomService.getRoomsByAvailable(checkin, checkout);
         const BookedRooms = new Set(BookingsData.map(e => e.roomid));
-        
+
         if (filteredRooms) {
           filteredRooms = filteredRooms.filter(e => !BookedRooms.has(e.RoomID))
         } else {
@@ -54,10 +54,10 @@ export const RoomService = {
           filteredRooms = RoomsData.filter(e => e.Price <= Number(price))
         }
       }
-      
+
       return filteredRooms;
     } catch (e) {
-      console.log(e)
+
       return e
     }
   },
@@ -69,9 +69,9 @@ export const RoomService = {
         attributes: ['name']
       }
     });
-    return rooms  
+    return rooms
   },
-  getRoomsByAvailable: async (checkin,checkout) => {
+  getRoomsByAvailable: async (checkin, checkout) => {
     const bookings = await Bookings.findAll({
       where: literal(`checkin BETWEEN DATE(:CHECKIN) AND DATE(:CHECKOUT) OR checkout BETWEEN DATE(:CHECKIN) AND DATE(:CHECKOUT) AND isDeleted <> 1`),
       replacements: { CHECKIN: checkin, CHECKOUT: checkout }

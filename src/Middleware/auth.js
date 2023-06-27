@@ -4,7 +4,7 @@ const veryfiToken = (req,res,next) => {
   const token = req.headers["x-access-token"];
 
   if(!token) {
-    return res.status(403).send({message:'No token!'})
+    return res.status(403).send({message:'No token!'});
   }
 
   jwt.verify(
@@ -12,10 +12,10 @@ const veryfiToken = (req,res,next) => {
     process.env.secretKey,
     (err,decoded) => {
       if (err) {
-        return res.status(401).send({message: 'Unathorized!'})
+        return res.status(401).send({message: 'Unathorized!'});
       }
       req.userId = decoded.id;
-      next()
+      next();
     })
 }
 

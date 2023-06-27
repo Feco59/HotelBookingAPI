@@ -1,5 +1,4 @@
-import { Sequelize } from 'sequelize'
-
+import { Sequelize } from 'sequelize';
 
 const sequelize = new Sequelize(
   process.env.MYSQL_DATABASE,
@@ -18,6 +17,6 @@ const sequelize = new Sequelize(
      idle: 10000
     }
   }
-)
+);
 
 export default sequelize;
