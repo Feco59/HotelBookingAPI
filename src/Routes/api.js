@@ -11,6 +11,7 @@ const apiRouter = express.Router();
 apiRouter.use(cors());
 apiRouter.use(express.json());
 
+apiRouter.post('/api/user',UserController.UserRegistration);
 apiRouter.post('/api/user/auth',UserController.UserLogin);
 
 apiRouter.get('/api/room',RoomController.getAvailableRooms);

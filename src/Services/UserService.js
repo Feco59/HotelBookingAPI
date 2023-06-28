@@ -6,6 +6,25 @@ import { error, BookingError } from "./statusService.js"
 const User = db.user
 
 const UserService = {
+  createUser: async (username,password) => {
+
+      const checkUserAlreadyExists = await User.findOne({
+        where: {
+          username: username
+        }
+      });
+
+      if(checkUserAlreadyExists) {
+        throw BookingError(error.USERNAME_ALREADY_TAKEN)
+      }
+
+      const user = await User.create({
+        username,
+        password: bcrypt.hashSync(password, 8),
+      })
+
+      return user;
+  },
   Login: async userData => {
 
     const user = await User.findOne({
